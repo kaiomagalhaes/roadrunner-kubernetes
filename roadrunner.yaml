@@ -1,0 +1,57 @@
+ apiVersion: apps/v1
+ kind: Deployment
+ metadata:
+   name: roadrunner-deployment
+   labels:
+     app: roadrunner
+ spec:
+   replicas: 1
+   selector:
+     matchLabels:
+       app: roadrunner
+   template:
+     metadata:
+       labels:
+         app: roadrunner
+     spec:
+       containers:
+       - image: kaiomagalhaes/roadrunner:v1.118.0
+         name: roadrunner
+         ports:
+           - containerPort: 5000
+         env:
+         - name: DATABASE_URL
+           valueFrom:
+             secretKeyRef:
+               name: roadrunner-secret
+               key: db-host
+         - name: SLACK_API_KEY
+           valueFrom:
+             secretKeyRef:
+               name: roadrunner-secret
+               key: slack-api-key
+         - name: GITHUB_AUTH_KEY
+           valueFrom:
+             secretKeyRef:
+               name: roadrunner-secret
+               key: github-auth-key
+         - name: LOG_HOST
+           value: "test-roadrunner-k8s"
+         - name: LOG_ENV
+           value: "qa"
+         - name: SLACK_API_URL
+           value: http://notifications-service:5001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: roadrunner-service
+spec:
+  selector:
+    app: roadrunner
+  type: LoadBalancer
+  ports:
+   - protocol: TCP
+     port: 5000
+     targetPort: 5000
+     nodePort: 30000
